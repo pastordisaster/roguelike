@@ -1,3 +1,5 @@
+from random import randint
+
 from map_objects.tile import Tile
 from map_objects.rectangle import Rect
 
@@ -13,15 +15,45 @@ class GameMap:
 
         return tiles
 
-    def make_map(self):
-        # Create two rooms for demonstrative purposes
-        room1 = Rect(20, 15, 10, 15)
-        room2 = Rect(35, 15, 10, 15)
+    def make_map(self, max_rooms, room_min_size, room_max_size, map_width, map_height, player):
 
-        self.create_room(room1)
-        self.create_room(room2)
+        rooms = []
+        num_rooms = 0
 
-        self.create_h_tunnel(25, 40, 23)
+        for r in range(max_rooms):
+            w = randint(room_min_size, room_max_size)
+            h = randint(room_min_size, room_max_size)
+
+            x = randint(0, map_width - w - 1)
+            y = randint(0, map_height - h - 1)
+
+            new_room = Rect(x, y, w, h)
+
+            for other_room in rooms:
+                if new_room.intersect(other_room):
+                    break
+
+            else:
+                self.create_room(new_room)
+                (new_x, new_y) = new_room.center()
+
+                if num_rooms == 0:
+                    player.x = new_x
+                    player.y = new_y
+
+                else:
+                    (prev_x, prev_y) = rooms[num_rooms - 1].center()
+
+                    if randint(0, 1) == 1:
+                        self.create_h_tunnel(prev_x, new_x, prev_y)
+                        self.create_v_tunnel(prev_y, new_y, new_x)
+
+                    else:
+                        self.create_v_tunnel(prev_y, new_y, prev_x)
+                        self.create_h_tunnel(prev_x, new_x, new_y)
+
+                rooms.append(new_room)
+                num_rooms += 1
 
     def create_room(self, room):
         # go through the tiles in the rectangle and make them passable
@@ -35,8 +67,8 @@ class GameMap:
             self.tiles[x][y].blocked = False
             self.tiles[x][y].block_sight = False
 
-    def create_v_tunnel(self, y1, y2, y):
-        for x in range(min(y1, y2), max(y1, y2) + 1):
+    def create_v_tunnel(self, y1, y2, x):
+        for y in range(min(y1, y2), max(y1, y2) + 1):
             self.tiles[x][y].blocked = False
             self.tiles[x][y].block_sight = False
 
